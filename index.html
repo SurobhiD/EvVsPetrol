@@ -213,11 +213,6 @@
       background: var(--petrol-soft);
     }
 
-    .pill.close {
-      color: #73500c;
-      background: #fff0c7;
-    }
-
     .conclusion {
       display: grid;
       gap: 10px;
@@ -247,7 +242,7 @@
 
     .hero-metrics {
       display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-template-columns: repeat(4, minmax(0, 1fr));
       gap: 12px;
     }
 
@@ -263,6 +258,7 @@
       color: var(--muted);
       font-size: 12px;
       margin-bottom: 7px;
+      white-space: nowrap;
     }
 
     .metric strong {
@@ -286,6 +282,19 @@
       grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 18px;
       align-items: start;
+    }
+
+    .analysis-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
+      align-items: start;
+    }
+
+    .analysis-column {
+      display: grid;
+      gap: 18px;
+      min-width: 0;
     }
 
     .panel {
@@ -417,7 +426,7 @@
       width: 100%;
       border-collapse: collapse;
       table-layout: fixed;
-      min-width: 760px;
+      min-width: 1240px;
       font-size: 13px;
     }
 
@@ -432,13 +441,13 @@
     th:first-child,
     td:first-child {
       text-align: left;
-      width: 18%;
+      width: 10%;
     }
 
-    th:nth-child(4),
-    td:nth-child(4) {
+    th:nth-child(8),
+    td:nth-child(8) {
       text-align: left;
-      width: 16%;
+      width: 11%;
     }
 
     th {
@@ -449,8 +458,12 @@
 
     th:nth-child(2),
     th:nth-child(3),
-    th:nth-child(5) {
-      width: 22%;
+    th:nth-child(4),
+    th:nth-child(5),
+    th:nth-child(6),
+    th:nth-child(7),
+    th:nth-child(9) {
+      width: 13%;
     }
 
     tr.selected td {
@@ -652,7 +665,8 @@
       min-width: 0;
     }
 
-    .table-grid .table-wrap {
+    .table-grid .table-wrap,
+    .analysis-column .table-wrap {
       max-height: 390px;
       overflow: auto;
     }
@@ -857,6 +871,7 @@
 
       .hero,
       .grid,
+      .analysis-grid,
       .table-grid,
       .footer-grid,
       .compare-header,
@@ -946,12 +961,14 @@
 
       .hero,
       .grid,
+      .analysis-grid,
       .table-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 10px;
       }
 
-      .table-grid .table-wrap {
+      .table-grid .table-wrap,
+      .analysis-column .table-wrap {
         max-height: none;
         overflow: visible;
       }
@@ -1043,16 +1060,20 @@
             </div>
             <div class="hero-metrics">
               <div class="metric">
-                <span>Inflation-adjusted savings</span>
-                <strong id="savingsMetric"></strong>
+                <span>EV cost per km</span>
+                <strong id="evCostPerKmMetric"></strong>
               </div>
               <div class="metric">
-                <span>Break-even monthly distance</span>
-                <strong id="breakEvenMetric"></strong>
+                <span>Petrol cost per km</span>
+                <strong id="petrolCostPerKmMetric"></strong>
               </div>
               <div class="metric">
-                <span>Running cost advantage</span>
-                <strong id="runAdvMetric"></strong>
+                <span>Break-even year</span>
+                <strong id="breakEvenYearMetric"></strong>
+              </div>
+              <div class="metric">
+                <span>Break-even distance</span>
+                <strong id="breakEvenDistanceMetric"></strong>
               </div>
             </div>
           </div>
@@ -1068,80 +1089,90 @@
           </div>
         </section>
 
-        <section class="grid">
-          <div class="panel">
-            <div class="panel-head">
-              <div>
-                <h2>Cost across monthly distance</h2>
-                <p class="subtle">Inflation-adjusted TCO from about 400 km/month to 4,200 km/month</p>
+        <section class="analysis-grid">
+          <div class="analysis-column">
+            <div class="panel">
+              <div class="panel-head">
+                <div>
+                  <h2>Cost across monthly distance</h2>
+                  <p class="subtle">Inflation-adjusted TCO from about 400 km/month to 4,200 km/month</p>
+                </div>
+                <div class="legend">
+                  <span><i class="dot" style="background: var(--ev)"></i>EV</span>
+                  <span><i class="dot" style="background: var(--petrol)"></i>Petrol</span>
+                </div>
               </div>
-              <div class="legend">
-                <span><i class="dot" style="background: var(--ev)"></i>EV</span>
-                <span><i class="dot" style="background: var(--petrol)"></i>Petrol</span>
-              </div>
+              <svg class="chart" id="lineChart" role="img" aria-label="EV and petrol cost of ownership by monthly distance"></svg>
             </div>
-            <svg class="chart" id="lineChart" role="img" aria-label="EV and petrol cost of ownership by monthly distance"></svg>
-          </div>
 
-          <div class="panel">
-            <div class="panel-head">
-              <div>
-                <h2>TCO across ownership years</h2>
-                <p class="subtle">Years 1-15 at the selected monthly distance</p>
+            <div class="panel">
+              <div class="panel-head">
+                <div>
+                  <h2>Distance simulation table</h2>
+                  <p class="subtle">Inflation-adjusted totals; the selected monthly distance row is highlighted</p>
+                </div>
               </div>
-              <div class="legend">
-                <span><i class="dot" style="background: var(--ev)"></i>EV</span>
-                <span><i class="dot" style="background: var(--petrol)"></i>Petrol</span>
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Monthly km</th>
+                      <th>EV total, adj.</th>
+                      <th>Petrol total, adj.</th>
+                      <th>EV Running Cost</th>
+                      <th>Petrol Running Cost</th>
+                      <th>EV Fixed Cost</th>
+                      <th>Petrol Fixed Cost</th>
+                      <th>Cheaper</th>
+                      <th>Savings</th>
+                    </tr>
+                  </thead>
+                  <tbody id="simulationRows"></tbody>
+                </table>
               </div>
-            </div>
-            <svg class="chart" id="yearChart" role="img" aria-label="EV and petrol cost of ownership by ownership year"></svg>
-          </div>
-        </section>
-
-        <section class="table-grid">
-          <div class="panel">
-            <div class="panel-head">
-              <div>
-                <h2>Year simulation table</h2>
-                <p class="subtle">Inflation-adjusted totals at the selected monthly distance</p>
-              </div>
-            </div>
-            <div class="table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Year</th>
-                    <th>EV total, adj.</th>
-                    <th>Petrol total, adj.</th>
-                    <th>Cheaper</th>
-                    <th>Savings</th>
-                  </tr>
-                </thead>
-                <tbody id="yearSimulationRows"></tbody>
-              </table>
             </div>
           </div>
 
-          <div class="panel">
-            <div class="panel-head">
-              <div>
-                <h2>Distance simulation table</h2>
-                <p class="subtle">Inflation-adjusted totals; the selected monthly distance row is highlighted</p>
+          <div class="analysis-column">
+            <div class="panel">
+              <div class="panel-head">
+                <div>
+                  <h2>TCO across ownership years</h2>
+                  <p class="subtle">Years 1-15 at the selected monthly distance</p>
+                </div>
+                <div class="legend">
+                  <span><i class="dot" style="background: var(--ev)"></i>EV</span>
+                  <span><i class="dot" style="background: var(--petrol)"></i>Petrol</span>
+                </div>
               </div>
+              <svg class="chart" id="yearChart" role="img" aria-label="EV and petrol cost of ownership by ownership year"></svg>
             </div>
-            <div class="table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Monthly km</th>
-                    <th>EV total, adj.</th>
-                    <th>Petrol total, adj.</th>
-                    <th>Cheaper</th>
-                    <th>Savings</th>
-                  </tr>
-                </thead>
-                <tbody id="simulationRows"></tbody>
-              </table>
+
+            <div class="panel">
+              <div class="panel-head">
+                <div>
+                  <h2>Year simulation table</h2>
+                  <p class="subtle">Inflation-adjusted totals at the selected monthly distance</p>
+                </div>
+              </div>
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Year</th>
+                      <th>EV total, adj.</th>
+                      <th>Petrol total, adj.</th>
+                      <th>EV Running Cost</th>
+                      <th>Petrol Running Cost</th>
+                      <th>EV Fixed Cost</th>
+                      <th>Petrol Fixed Cost</th>
+                      <th>Cheaper</th>
+                      <th>Savings</th>
+                    </tr>
+                  </thead>
+                  <tbody id="yearSimulationRows"></tbody>
+                </table>
+              </div>
             </div>
           </div>
         </section>
@@ -1252,7 +1283,7 @@
       },
       {
         label: "Battery replacement",
-        helper: "Included only when ownership period reaches the replacement year.",
+        helper: "In the year simulation, this cost is applied only in the replacement year.",
         ev: { key: "batteryCost", label: "Replacement cost", type: "number", unit: "Rs" },
         petrol: { text: "Not applicable for petrol cars" }
       },
@@ -1354,7 +1385,7 @@
       return total;
     }
 
-    function calculateFor(annualDistance = currentAnnualDistance(), ownershipYears = state.ownershipYears) {
+    function calculateFor(annualDistance = currentAnnualDistance(), ownershipYears = state.ownershipYears, options = {}) {
       const years = Math.max(clampNumber(ownershipYears), 0);
       const evRange = Math.max(clampNumber(state.evRange), 1);
       const petrolMileage = Math.max(clampNumber(state.petrolMileage), 1);
@@ -1365,9 +1396,15 @@
       const inflationRate = clampNumber(state.inflationRate);
       const includeBatteryDegradation = Boolean(state.includeBatteryDegradation);
       const batteryDegradationRate = clampNumber(state.batteryDegradationRate);
-      const batteryReplacementYear = clampNumber(state.batteryYear);
-      const batteryIncluded = years >= clampNumber(state.batteryYear) && clampNumber(state.batteryCost) > 0;
-      const battery = batteryIncluded ? clampNumber(state.batteryCost) : 0;
+      const batteryReplacementYear = Math.max(Math.floor(clampNumber(state.batteryYear)), 0);
+      const batteryCost = Math.max(clampNumber(state.batteryCost), 0);
+      const currentYear = Math.floor(years);
+      const batteryIncluded = batteryCost > 0 && batteryReplacementYear > 0 && (
+        options.batteryOnlyInCurrentYear
+          ? currentYear === batteryReplacementYear
+          : years >= batteryReplacementYear
+      );
+      const battery = batteryIncluded ? batteryCost : 0;
       const annualDistanceValue = Math.max(clampNumber(annualDistance), 0);
       const inflationFactorTotal = inflatedRecurringTotal(1, years, inflationRate);
       const evRunningCostPerAnnualKmTotal = inflatedEvRunningCostPerAnnualKmTotal(
@@ -1438,7 +1475,11 @@
           annualDistance,
           evTotal: calc.evTotal,
           petrolTotal: calc.petrolTotal,
-          winner: Math.abs(diff) < Math.min(calc.evTotal, calc.petrolTotal) * 0.02 ? "Close" : diff < 0 ? "EV" : "Petrol",
+          evRunning: calc.evParts.running,
+          petrolRunning: calc.petrolParts.running,
+          evFixed: calc.evFixed,
+          petrolFixed: calc.petrolFixed,
+          winner: diff <= 0 ? "EV" : "Petrol",
           savings: Math.abs(diff)
         });
       }
@@ -1450,13 +1491,17 @@
       const maxYears = 15;
       const annualDistance = currentAnnualDistance();
       for (let year = 1; year <= maxYears; year += 1) {
-        const calc = calculateFor(annualDistance, year);
+        const calc = calculateFor(annualDistance, year, { batteryOnlyInCurrentYear: true });
         const diff = calc.evTotal - calc.petrolTotal;
         rows.push({
           year,
           evTotal: calc.evTotal,
           petrolTotal: calc.petrolTotal,
-          winner: Math.abs(diff) < Math.min(calc.evTotal, calc.petrolTotal) * 0.02 ? "Close" : diff < 0 ? "EV" : "Petrol",
+          evRunning: calc.evParts.running,
+          petrolRunning: calc.petrolParts.running,
+          evFixed: calc.evFixed,
+          petrolFixed: calc.petrolFixed,
+          winner: diff <= 0 ? "EV" : "Petrol",
           savings: Math.abs(diff)
         });
       }
@@ -1621,13 +1666,9 @@
 
     function winnerDetails(calc) {
       const diff = calc.evTotal - calc.petrolTotal;
-      const close = Math.abs(diff) < Math.min(calc.evTotal, calc.petrolTotal) * 0.02;
-      if (close) {
-        return { winner: "Close call", className: "close", savings: Math.abs(diff), diff };
-      }
       return {
-        winner: diff < 0 ? "EV" : "Petrol",
-        className: diff < 0 ? "ev" : "petrol",
+        winner: diff <= 0 ? "EV" : "Petrol",
+        className: diff <= 0 ? "ev" : "petrol",
         savings: Math.abs(diff),
         diff
       };
@@ -1678,18 +1719,13 @@
       return `At the assumed usage of ${number.format(monthlyDistance)} km per month, the EV becomes less expensive than the petrol car ${paybackLabel}.`;
     }
 
-    function conclusionHtml(calc, details, yearRows) {
-      if (details.winner === "Close call") {
-        return `
-          <p><strong>Recommendation:</strong> Based on the selected assumptions, this is a close decision, with only ${money.format(details.savings)} separating the two options over a ${number.format(calc.years)}-year ownership period after adjusting for inflation.</p>
-          <p><strong>Key Insights:</strong></p>
-          <ul class="insight-list">
-            <li>${breakEvenInsight(calc)}</li>
-            <li>${paybackInsight(yearRows)}</li>
-          </ul>
-        `;
-      }
+    function breakEvenYearLabel(yearRows) {
+      const paybackYears = estimateEvPaybackYears(yearRows);
+      if (paybackYears === null) return "Not by year 15";
+      return paybackYears <= 1 ? "Year 1" : `${percentNumber.format(paybackYears)} years`;
+    }
 
+    function conclusionHtml(calc, details, yearRows) {
       const cheaperLabel = details.winner === "EV" ? "EV" : "petrol car";
       return `
         <p><strong>Recommendation:</strong> Based on the selected assumptions, the ${cheaperLabel} is the more economical option, with an estimated savings of ${money.format(details.savings)} over a ${number.format(calc.years)}-year ownership period after adjusting for inflation.</p>
@@ -1892,6 +1928,10 @@
           <td>${number.format(row.distance)}</td>
           <td>${money.format(row.evTotal)}</td>
           <td>${money.format(row.petrolTotal)}</td>
+          <td>${money.format(row.evRunning)}</td>
+          <td>${money.format(row.petrolRunning)}</td>
+          <td>${money.format(row.evFixed)}</td>
+          <td>${money.format(row.petrolFixed)}</td>
           <td>${row.winner}</td>
           <td>${money.format(row.savings)}</td>
         </tr>
@@ -1905,6 +1945,10 @@
           <td>${number.format(row.year)}</td>
           <td>${money.format(row.evTotal)}</td>
           <td>${money.format(row.petrolTotal)}</td>
+          <td>${money.format(row.evRunning)}</td>
+          <td>${money.format(row.petrolRunning)}</td>
+          <td>${money.format(row.evFixed)}</td>
+          <td>${money.format(row.petrolFixed)}</td>
           <td>${row.winner}</td>
           <td>${money.format(row.savings)}</td>
         </tr>
@@ -1917,6 +1961,9 @@
       const rows = simulation();
       const yearRows = yearSimulation();
       const breakEven = calc.breakEvenDistance;
+      const totalDistance = currentAnnualDistance() * Math.max(Math.floor(calc.years), 0);
+      const evCostPerKm = totalDistance > 0 ? calc.evParts.running / totalDistance : calc.evRunningPerKm;
+      const petrolCostPerKm = totalDistance > 0 ? calc.petrolParts.running / totalDistance : calc.petrolRunningPerKm;
       const breakEvenLabel = breakEven === null
         ? "No EV advantage"
         : breakEven <= 0
@@ -1926,9 +1973,10 @@
       document.getElementById("winnerPill").textContent = details.winner;
       document.getElementById("winnerPill").className = `pill ${details.className}`;
       document.getElementById("conclusion").innerHTML = conclusionHtml(calc, details, yearRows);
-      document.getElementById("savingsMetric").textContent = money.format(details.savings);
-      document.getElementById("breakEvenMetric").textContent = breakEvenLabel;
-      document.getElementById("runAdvMetric").textContent = `${decimalMoney.format(calc.runningAdvantage)}/km`;
+      document.getElementById("evCostPerKmMetric").textContent = `${decimalMoney.format(evCostPerKm)}/km`;
+      document.getElementById("petrolCostPerKmMetric").textContent = `${decimalMoney.format(petrolCostPerKm)}/km`;
+      document.getElementById("breakEvenYearMetric").textContent = breakEvenYearLabel(yearRows);
+      document.getElementById("breakEvenDistanceMetric").textContent = breakEvenLabel;
 
       renderLineChart(rows, calc);
       renderYearChart(yearRows);
