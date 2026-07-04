@@ -1,0 +1,2216 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>EV vs Petrol TCO Dashboard</title>
+  <style>
+    :root {
+      --bg: #f5f7f3;
+      --panel: #ffffff;
+      --ink: #17211b;
+      --muted: #657268;
+      --line: #d9e0d7;
+      --ev: #168a5f;
+      --ev-soft: #dff3ea;
+      --petrol: #bd5b21;
+      --petrol-soft: #f8e6d9;
+      --blue: #2e6f9e;
+      --warn: #a66a00;
+      --shadow: 0 18px 50px rgba(27, 40, 31, 0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      letter-spacing: 0;
+    }
+
+    button,
+    input {
+      font: inherit;
+    }
+
+    .app {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 360px minmax(0, 1fr);
+    }
+
+    aside {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow: auto;
+      padding: 22px;
+      background: #ffffff;
+      border-right: 1px solid var(--line);
+    }
+
+    main {
+      min-width: 0;
+      padding: 26px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .mark {
+      width: 38px;
+      height: 38px;
+      border-radius: 8px;
+      display: grid;
+      place-items: center;
+      background: var(--ink);
+      color: #fff;
+      font-weight: 800;
+    }
+
+    h1,
+    h2,
+    h3,
+    p {
+      margin: 0;
+    }
+
+    h1 {
+      font-size: 21px;
+      line-height: 1.15;
+    }
+
+    .subtle {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .controls {
+      display: grid;
+      gap: 18px;
+    }
+
+    .control-group {
+      border-top: 1px solid var(--line);
+      padding-top: 16px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .control-group h2 {
+      font-size: 13px;
+      text-transform: uppercase;
+      color: var(--muted);
+      letter-spacing: 0.06em;
+    }
+
+    .field {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 136px;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .field label {
+      font-size: 13px;
+      line-height: 1.25;
+    }
+
+    input {
+      width: 100%;
+      border: 1px solid var(--line);
+      background: #fbfcfa;
+      color: var(--ink);
+      border-radius: 7px;
+      padding: 9px 10px;
+      outline: none;
+    }
+
+    input:focus {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 3px rgba(46, 111, 158, 0.14);
+    }
+
+    .toolbar {
+      display: flex;
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    .icon-btn {
+      width: 40px;
+      height: 40px;
+      display: grid;
+      place-items: center;
+      border: 1px solid var(--line);
+      background: #fff;
+      border-radius: 7px;
+      cursor: pointer;
+    }
+
+    .icon-btn:hover {
+      background: #f0f4ef;
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1.25fr) minmax(280px, 0.75fr);
+      gap: 18px;
+      align-items: stretch;
+      margin-bottom: 18px;
+    }
+
+    .summary,
+    .panel,
+    .kpi,
+    .table-wrap {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+    }
+
+    .summary {
+      padding: 24px;
+      display: grid;
+      gap: 18px;
+    }
+
+    .summary-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 20px;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      border-radius: 999px;
+      padding: 7px 10px;
+      font-weight: 700;
+      font-size: 13px;
+      white-space: nowrap;
+    }
+
+    .pill.ev {
+      color: #0f6d49;
+      background: var(--ev-soft);
+    }
+
+    .pill.petrol {
+      color: #8b4218;
+      background: var(--petrol-soft);
+    }
+
+    .conclusion {
+      display: grid;
+      gap: 10px;
+      max-width: 920px;
+      color: var(--ink);
+      font-size: 16px;
+      line-height: 1.5;
+    }
+
+    .conclusion p {
+      margin: 0;
+    }
+
+    .conclusion strong {
+      font-size: 17px;
+    }
+
+    .insight-list {
+      margin: 0;
+      padding-left: 20px;
+      color: var(--muted);
+    }
+
+    .insight-list li {
+      margin: 6px 0;
+    }
+
+    .hero-metrics {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .metric {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 14px;
+      background: #fbfcfa;
+    }
+
+    .metric span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom: 7px;
+      white-space: nowrap;
+    }
+
+    .metric strong {
+      display: block;
+      font-size: 20px;
+      line-height: 1.1;
+    }
+
+    .breakdown-card {
+      display: grid;
+      align-content: start;
+      gap: 16px;
+    }
+
+    .breakdown-card .panel-head {
+      margin-bottom: 0;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
+      align-items: start;
+    }
+
+    .analysis-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
+      align-items: start;
+    }
+
+    .analysis-column {
+      display: grid;
+      gap: 18px;
+      min-width: 0;
+    }
+
+    .panel {
+      padding: 20px;
+      overflow: hidden;
+    }
+
+    #dashboardScreen.active {
+      display: grid;
+      gap: 18px;
+    }
+
+    #dashboardScreen .summary,
+    #dashboardScreen .panel,
+    #dashboardScreen .kpi,
+    #dashboardScreen .table-wrap {
+      border-color: #d5ded2;
+    }
+
+    #dashboardScreen .panel-head {
+      min-height: 52px;
+    }
+
+    .panel-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .panel-head h2 {
+      font-size: 18px;
+    }
+
+    .chart {
+      width: 100%;
+      min-height: 310px;
+    }
+
+    .axis-label {
+      fill: var(--muted);
+      font-size: 11px;
+    }
+
+    .axis-title {
+      fill: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .legend span {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      display: inline-block;
+    }
+
+    .breakdown {
+      display: grid;
+      gap: 14px;
+    }
+
+    .bar-group {
+      display: grid;
+      gap: 8px;
+    }
+
+    .bar-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .stack {
+      height: 34px;
+      border-radius: 7px;
+      overflow: hidden;
+      display: flex;
+      background: #eef2ed;
+      border: 1px solid var(--line);
+    }
+
+    .seg {
+      min-width: 0;
+    }
+
+    .seg.purchase {
+      background: #315f77;
+    }
+
+    .seg.insurance {
+      background: #84a98c;
+    }
+
+    .seg.maintenance {
+      background: #d6a04b;
+    }
+
+    .seg.running {
+      background: #b56576;
+    }
+
+    .seg.battery {
+      background: #6d597a;
+    }
+
+    .table-wrap {
+      overflow: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+      min-width: 1240px;
+      font-size: 13px;
+    }
+
+    th,
+    td {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--line);
+      text-align: right;
+      white-space: nowrap;
+    }
+
+    th:first-child,
+    td:first-child {
+      text-align: left;
+      width: 10%;
+    }
+
+    th:nth-child(8),
+    td:nth-child(8) {
+      text-align: left;
+      width: 11%;
+    }
+
+    th {
+      color: var(--muted);
+      font-weight: 700;
+      background: #fbfcfa;
+    }
+
+    th:nth-child(2),
+    th:nth-child(3),
+    th:nth-child(4),
+    th:nth-child(5),
+    th:nth-child(6),
+    th:nth-child(7),
+    th:nth-child(9) {
+      width: 13%;
+    }
+
+    tr.selected td {
+      background: #ecf4ff;
+      font-weight: 700;
+    }
+
+    .footer-grid {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 18px;
+      margin-top: 18px;
+    }
+
+    .kpi {
+      padding: 16px;
+    }
+
+    .kpi span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom: 8px;
+    }
+
+    .kpi strong {
+      font-size: 18px;
+      line-height: 1.15;
+    }
+
+    .app {
+      display: block;
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 22px;
+    }
+
+    aside {
+      position: static;
+      height: auto;
+      overflow: visible;
+      padding: 0;
+      margin-bottom: 18px;
+      background: transparent;
+      border-right: 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+    }
+
+    main {
+      padding: 0;
+    }
+
+    .brand {
+      margin-bottom: 0;
+    }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .tabs {
+      display: inline-grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 4px;
+      padding: 4px;
+      background: #e9efe7;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+    }
+
+    .tab-btn {
+      border: 0;
+      background: transparent;
+      color: var(--muted);
+      border-radius: 6px;
+      padding: 10px 16px;
+      font-weight: 750;
+      cursor: pointer;
+      min-width: 132px;
+    }
+
+    .tab-btn.active {
+      color: var(--ink);
+      background: #fff;
+      box-shadow: 0 8px 20px rgba(27, 40, 31, 0.08);
+    }
+
+    .screen {
+      display: none;
+    }
+
+    .screen[hidden] {
+      display: none !important;
+    }
+
+    .screen.active {
+      display: block;
+    }
+
+    .assumption-page {
+      display: grid;
+      gap: 12px;
+    }
+
+    .assumption-actions {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      flex-wrap: wrap;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      padding: 14px 16px;
+    }
+
+    .action-buttons {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .action-btn {
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      padding: 10px 14px;
+      font-weight: 800;
+      cursor: pointer;
+      background: #fff;
+      color: var(--ink);
+    }
+
+    .action-btn.primary {
+      background: var(--ink);
+      color: #fff;
+      border-color: var(--ink);
+    }
+
+    .action-btn.accent {
+      background: #edf6f2;
+      border-color: #b9d8ca;
+      color: #0f6d49;
+    }
+
+    .action-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 10px 20px rgba(27, 40, 31, 0.08);
+    }
+
+    .action-status {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.4;
+    }
+
+    .action-status.pending {
+      color: var(--warn);
+      font-weight: 700;
+    }
+
+    .assumption-panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      padding: 16px;
+    }
+
+    .dashboard-actions {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      flex-wrap: wrap;
+      margin-bottom: 18px;
+    }
+
+    .dashboard-actions h2 {
+      font-size: 20px;
+    }
+
+    .table-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
+      align-items: start;
+      margin-top: 18px;
+    }
+
+    .table-grid .panel {
+      min-width: 0;
+    }
+
+    .table-grid .table-wrap,
+    .analysis-column .table-wrap {
+      max-height: 390px;
+      overflow: auto;
+    }
+
+    thead th {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+
+    .form-heading {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 18px;
+      margin-bottom: 12px;
+    }
+
+    .form-heading h2 {
+      font-size: 18px;
+    }
+
+    .shared-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .compare-form {
+      display: grid;
+      gap: 8px;
+    }
+
+    .compare-header,
+    .compare-row {
+      display: grid;
+      grid-template-columns: minmax(150px, 0.58fr) repeat(2, minmax(190px, 1fr));
+      gap: 10px;
+      align-items: stretch;
+    }
+
+    .compare-header {
+      align-items: center;
+      padding-bottom: 4px;
+    }
+
+    .column-title {
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .column-title.ev {
+      background: var(--ev-soft);
+      color: #0f6d49;
+    }
+
+    .column-title.petrol {
+      background: var(--petrol-soft);
+      color: #8b4218;
+    }
+
+    .row-label {
+      border-top: 1px solid var(--line);
+      padding-top: 9px;
+    }
+
+    .row-label strong {
+      display: block;
+      font-size: 13px;
+      margin-bottom: 2px;
+    }
+
+    .input-card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fbfcfa;
+      padding: 8px;
+      display: grid;
+      gap: 6px;
+      min-height: 64px;
+    }
+
+    .input-card label {
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.35;
+      font-weight: 700;
+    }
+
+    .input-wrap {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid var(--line);
+      background: #fff;
+      border-radius: 7px;
+      padding-right: 8px;
+    }
+
+    .input-wrap input {
+      border: 0;
+      background: transparent;
+      padding: 8px;
+      box-shadow: none;
+    }
+
+    .input-wrap input:focus {
+      box-shadow: none;
+    }
+
+    .input-wrap:focus-within {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 3px rgba(46, 111, 158, 0.14);
+    }
+
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-height: 34px;
+      cursor: pointer;
+    }
+
+    .toggle-row input {
+      position: absolute;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .toggle-switch {
+      width: 42px;
+      height: 24px;
+      border-radius: 999px;
+      background: #cfd8cf;
+      position: relative;
+      transition: background 0.2s ease;
+      flex: 0 0 auto;
+    }
+
+    .toggle-switch::after {
+      content: "";
+      width: 18px;
+      height: 18px;
+      border-radius: 999px;
+      background: #fff;
+      position: absolute;
+      left: 3px;
+      top: 3px;
+      box-shadow: 0 2px 5px rgba(27, 40, 31, 0.18);
+      transition: transform 0.2s ease;
+    }
+
+    .toggle-row input:checked + .toggle-switch {
+      background: var(--ev);
+    }
+
+    .toggle-row input:checked + .toggle-switch::after {
+      transform: translateX(18px);
+    }
+
+    .toggle-copy {
+      color: var(--ink);
+      font-size: 13px;
+      font-weight: 750;
+    }
+
+    .unit {
+      color: var(--muted);
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    .empty-card {
+      border: 1px dashed var(--line);
+      border-radius: 8px;
+      color: var(--muted);
+      display: grid;
+      place-items: center;
+      min-height: 64px;
+      font-size: 12px;
+      background: #fbfcfa;
+      text-align: center;
+      padding: 8px;
+    }
+
+
+
+    .print-report-cover,
+    .print-assumptions {
+      display: none;
+    }
+
+    .assumption-report-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 12px;
+    }
+
+    .assumption-report-card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fbfcfa;
+      overflow: hidden;
+    }
+
+    .assumption-report-card h3 {
+      font-size: 15px;
+      padding: 10px 12px;
+      background: #eef2ed;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .assumption-report-card table {
+      min-width: 0;
+      table-layout: auto;
+      font-size: 12px;
+    }
+
+    .assumption-report-card th,
+    .assumption-report-card td {
+      padding: 8px 10px;
+      white-space: normal;
+    }
+
+    .assumption-report-card th:first-child,
+    .assumption-report-card td:first-child {
+      width: 50%;
+    }
+
+    @media (max-width: 1100px) {
+      .app {
+        padding: 16px;
+      }
+
+      aside {
+        display: grid;
+        justify-content: stretch;
+      }
+
+      .hero,
+      .grid,
+      .analysis-grid,
+      .table-grid,
+      .footer-grid,
+      .compare-header,
+      .compare-row {
+        grid-template-columns: 1fr;
+      }
+
+      .shared-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .row-label {
+        padding-top: 20px;
+      }
+    }
+
+    @media (max-width: 720px) {
+      main,
+      aside {
+        padding: 0;
+      }
+
+      .hero-metrics {
+        grid-template-columns: 1fr;
+      }
+
+      .summary-top,
+      .panel-head {
+        display: grid;
+      }
+
+      .field {
+        grid-template-columns: 1fr;
+      }
+
+      .conclusion {
+        font-size: 15px;
+      }
+
+      .nav-actions,
+      .tabs,
+      .action-buttons {
+        width: 100%;
+      }
+
+      .shared-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .tab-btn,
+      .action-btn {
+        min-width: 0;
+      }
+    }
+
+    @media print {
+      @page {
+        size: A4 landscape;
+        margin: 10mm;
+      }
+
+      body {
+        background: #fff;
+      }
+
+      .app {
+        max-width: none;
+        padding: 0;
+      }
+
+      aside,
+      .dashboard-actions,
+      #assumptionsScreen {
+        display: none !important;
+      }
+
+      #dashboardScreen {
+        display: block !important;
+      }
+
+      .print-report-cover,
+      .print-assumptions {
+        display: block !important;
+        margin-bottom: 10px;
+      }
+
+      .print-report-cover {
+        page-break-after: avoid;
+      }
+
+      .summary,
+      .panel,
+      .table-wrap {
+        box-shadow: none;
+        break-inside: avoid;
+      }
+
+      .hero,
+      .grid,
+      .analysis-grid,
+      .table-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .table-grid .table-wrap,
+      .analysis-column .table-wrap {
+        max-height: none;
+        overflow: visible;
+      }
+
+      .assumption-report-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .print-assumptions {
+        page-break-after: always;
+      }
+
+      table {
+        min-width: 0;
+        font-size: 9px;
+      }
+
+      th,
+      td {
+        padding: 6px;
+        white-space: normal;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside>
+      <div class="brand">
+        <div class="mark">TCO</div>
+        <div>
+          <h1>EV vs Petrol</h1>
+          <p class="subtle">India ownership cost simulation</p>
+        </div>
+      </div>
+
+      <div class="nav-actions">
+        <nav class="tabs" aria-label="Primary">
+          <button class="tab-btn active" type="button" data-tab="assumptions" aria-selected="true">Assumptions</button>
+          <button class="tab-btn" type="button" data-tab="dashboard" aria-selected="false">Dashboard</button>
+        </nav>
+      </div>
+    </aside>
+
+    <main>
+      <section class="screen active assumption-page" id="assumptionsScreen">
+        <div class="assumption-actions">
+          <div>
+            <h2>Assumptions</h2>
+            <p class="action-status" id="assumptionStatus">Dashboard is calibrated with the current assumptions.</p>
+          </div>
+          <div class="action-buttons">
+            <button class="action-btn primary" id="recalibrateBtn" type="button">Re-calibrate</button>
+            <button class="action-btn accent" id="saveDefaultBtn" type="button">Save to default</button>
+            <button class="action-btn" id="revertBtn" type="button">Revert to original</button>
+          </div>
+        </div>
+
+        <div class="assumption-panel">
+          <div class="form-heading">
+            <div>
+              <h2>Usage assumptions</h2>
+              <p class="subtle">These apply to both cars and drive the simulation.</p>
+            </div>
+          </div>
+          <div class="shared-grid" id="sharedControls"></div>
+        </div>
+
+        <div class="assumption-panel">
+          <div class="form-heading">
+            <div>
+              <h2>Vehicle assumptions</h2>
+              <p class="subtle">Fill EV and petrol values side by side. Units are shown inside each input.</p>
+            </div>
+          </div>
+          <div class="compare-form" id="vehicleControls"></div>
+        </div>
+      </section>
+
+      <section class="screen" id="dashboardScreen" hidden>
+        <div class="dashboard-actions">
+          <div>
+            <h2>Dashboard</h2>
+            <p class="subtle">Inflation-adjusted ownership analysis based on the calibrated assumptions.</p>
+          </div>
+          <button class="action-btn primary" id="downloadPdfBtn" type="button">Download PDF</button>
+        </div>
+
+        <section class="print-report-cover panel" id="printReportCover">
+          <div class="panel-head">
+            <div>
+              <h2>EV vs Petrol Total Cost of Ownership Analysis</h2>
+              <p class="subtle" id="printReportDate"></p>
+            </div>
+          </div>
+          <div class="hero-metrics">
+            <div class="metric"><span>Ownership period</span><strong id="printOwnershipMetric"></strong></div>
+            <div class="metric"><span>Monthly distance</span><strong id="printDistanceMetric"></strong></div>
+            <div class="metric"><span>Annual inflation</span><strong id="printInflationMetric"></strong></div>
+            <div class="metric"><span>Recommendation</span><strong id="printRecommendationMetric"></strong></div>
+          </div>
+        </section>
+
+        <section class="print-assumptions panel" id="printAssumptions">
+          <div class="panel-head">
+            <div>
+              <h2>Assumptions used for this analysis</h2>
+              <p class="subtle">These are the calibrated assumptions used to generate the dashboard and simulations.</p>
+            </div>
+          </div>
+          <div class="assumption-report-grid" id="printAssumptionGrid"></div>
+        </section>
+
+        <section class="hero">
+          <div class="summary">
+            <div class="summary-top">
+              <div>
+                <p class="subtle">Final decision</p>
+                <div class="conclusion" id="conclusion"></div>
+              </div>
+              <span class="pill" id="winnerPill"></span>
+            </div>
+            <div class="hero-metrics">
+              <div class="metric">
+                <span>EV cost per km</span>
+                <strong id="evCostPerKmMetric"></strong>
+              </div>
+              <div class="metric">
+                <span>Petrol cost per km</span>
+                <strong id="petrolCostPerKmMetric"></strong>
+              </div>
+              <div class="metric">
+                <span>Break-even year</span>
+                <strong id="breakEvenYearMetric"></strong>
+              </div>
+              <div class="metric">
+                <span>Break-even distance</span>
+                <strong id="breakEvenDistanceMetric"></strong>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel breakdown-card">
+            <div class="panel-head">
+              <div>
+                <h2>Cost breakdown</h2>
+                <p class="subtle">Inflation-adjusted current scenario cost split</p>
+              </div>
+            </div>
+            <div class="breakdown" id="breakdown"></div>
+          </div>
+        </section>
+
+        <section class="analysis-grid">
+          <div class="analysis-column">
+            <div class="panel">
+              <div class="panel-head">
+                <div>
+                  <h2>Cost across monthly distance</h2>
+                  <p class="subtle">Inflation-adjusted TCO from about 400 km/month to 4,200 km/month</p>
+                </div>
+                <div class="legend">
+                  <span><i class="dot" style="background: var(--ev)"></i>EV</span>
+                  <span><i class="dot" style="background: var(--petrol)"></i>Petrol</span>
+                </div>
+              </div>
+              <svg class="chart" id="lineChart" role="img" aria-label="EV and petrol cost of ownership by monthly distance"></svg>
+            </div>
+
+            <div class="panel">
+              <div class="panel-head">
+                <div>
+                  <h2>Distance simulation table</h2>
+                  <p class="subtle">Inflation-adjusted totals; the selected monthly distance row is highlighted</p>
+                </div>
+              </div>
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Monthly km</th>
+                      <th>EV total, adj.</th>
+                      <th>Petrol total, adj.</th>
+                      <th>EV Running Cost</th>
+                      <th>Petrol Running Cost</th>
+                      <th>EV Fixed Cost</th>
+                      <th>Petrol Fixed Cost</th>
+                      <th>Cheaper</th>
+                      <th>Savings</th>
+                    </tr>
+                  </thead>
+                  <tbody id="simulationRows"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <div class="analysis-column">
+            <div class="panel">
+              <div class="panel-head">
+                <div>
+                  <h2>TCO across ownership years</h2>
+                  <p class="subtle">Years 1-15 at the selected monthly distance</p>
+                </div>
+                <div class="legend">
+                  <span><i class="dot" style="background: var(--ev)"></i>EV</span>
+                  <span><i class="dot" style="background: var(--petrol)"></i>Petrol</span>
+                </div>
+              </div>
+              <svg class="chart" id="yearChart" role="img" aria-label="EV and petrol cost of ownership by ownership year"></svg>
+            </div>
+
+            <div class="panel">
+              <div class="panel-head">
+                <div>
+                  <h2>Year simulation table</h2>
+                  <p class="subtle">Inflation-adjusted totals at the selected monthly distance</p>
+                </div>
+              </div>
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Year</th>
+                      <th>EV total, adj.</th>
+                      <th>Petrol total, adj.</th>
+                      <th>EV Running Cost</th>
+                      <th>Petrol Running Cost</th>
+                      <th>EV Fixed Cost</th>
+                      <th>Petrol Fixed Cost</th>
+                      <th>Cheaper</th>
+                      <th>Savings</th>
+                    </tr>
+                  </thead>
+                  <tbody id="yearSimulationRows"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </section>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const DEFAULT_STORAGE_KEY = "evPetrolTcoSavedDefaults";
+    const workbookDefaults = {
+      evPurchase: 1500000,
+      petrolPurchase: 1000000,
+      evInsurance: 30000,
+      petrolInsurance: 25000,
+      evMaintenance: 8000,
+      petrolMaintenance: 15000,
+      batteryCost: 400000,
+      batteryYear: 8,
+      electricityTariff: 8,
+      batterySize: 50,
+      evRange: 400,
+      petrolPrice: 105,
+      petrolMileage: 18,
+      ownershipYears: 8,
+      monthlyDistance: 1250,
+      inflationRate: 5,
+      includeBatteryDegradation: false,
+      batteryDegradationRate: 2
+    };
+
+    let defaults = loadSavedDefaults();
+    let state = { ...defaults };
+    let draftState = { ...defaults };
+    let hasPendingChanges = false;
+
+    const sharedFields = [
+      {
+        key: "ownershipYears",
+        label: "Ownership period",
+        helper: "How long you plan to keep the car.",
+        type: "number",
+        unit: "years"
+      },
+      {
+        key: "monthlyDistance",
+        label: "Monthly distance driven",
+        helper: "Expected monthly usage for the comparison.",
+        type: "number",
+        unit: "km/month"
+      },
+      {
+        key: "inflationRate",
+        label: "Annual inflation",
+        helper: "Applied to yearly insurance, maintenance, electricity, petrol, and running costs.",
+        type: "number",
+        unit: "%/year"
+      }
+    ];
+
+    const assumptionRows = [
+      {
+        label: "Purchase price",
+        helper: "Use on-road price if available.",
+        ev: { key: "evPurchase", label: "EV purchase price", type: "number", unit: "Rs" },
+        petrol: { key: "petrolPurchase", label: "Petrol purchase price", type: "number", unit: "Rs" }
+      },
+      {
+        label: "Insurance",
+        helper: "Annual comprehensive insurance estimate.",
+        ev: { key: "evInsurance", label: "EV insurance", type: "number", unit: "Rs/year" },
+        petrol: { key: "petrolInsurance", label: "Petrol insurance", type: "number", unit: "Rs/year" }
+      },
+      {
+        label: "Maintenance",
+        helper: "Annual service and repair estimate.",
+        ev: { key: "evMaintenance", label: "EV maintenance", type: "number", unit: "Rs/year" },
+        petrol: { key: "petrolMaintenance", label: "Petrol maintenance", type: "number", unit: "Rs/year" }
+      },
+      {
+        label: "Energy or fuel price",
+        helper: "Local home charging tariff and petrol price.",
+        ev: { key: "electricityTariff", label: "Electricity tariff", type: "number", unit: "Rs/kWh" },
+        petrol: { key: "petrolPrice", label: "Petrol price", type: "number", unit: "Rs/litre" }
+      },
+      {
+        label: "Efficiency",
+        helper: "How far the car goes on charge or fuel.",
+        ev: { key: "evRange", label: "Range per full charge", type: "number", unit: "km/charge" },
+        petrol: { key: "petrolMileage", label: "Mileage", type: "number", unit: "km/litre" }
+      },
+      {
+        label: "EV battery size",
+        helper: "Used to calculate EV running cost per km.",
+        ev: { key: "batterySize", label: "Battery capacity", type: "number", unit: "kWh" },
+        petrol: null
+      },
+      {
+        label: "Battery degradation",
+        helper: "Optional EV range loss applied each ownership year.",
+        ev: { key: "includeBatteryDegradation", label: "Include degradation", type: "checkbox", unit: "Include" },
+        petrol: { text: "Not applicable for petrol cars" }
+      },
+      {
+        label: "Degradation rate",
+        helper: "Used only when battery degradation is enabled.",
+        ev: { key: "batteryDegradationRate", label: "Annual range loss", type: "number", unit: "%/year" },
+        petrol: { text: "Not applicable for petrol cars" }
+      },
+      {
+        label: "Battery replacement",
+        helper: "Replacement cost is added at every interval entered in Battery replacement year. Set replacement year to 0 to exclude battery replacement cost.",
+        ev: { key: "batteryCost", label: "Replacement cost", type: "number", unit: "Rs" },
+        petrol: { text: "Not applicable for petrol cars" }
+      },
+      {
+        label: "Battery replacement year",
+        helper: "Enter the replacement interval in years (e.g., 8 means the battery is replaced every 8 years). Enter 0 if no battery replacement is expected during the vehicle's lifetime.",
+        ev: { key: "batteryYear", label: "Replacement year", type: "number", unit: "year" },
+        petrol: { text: "Not applicable for petrol cars" }
+      }
+    ];
+
+    const money = new Intl.NumberFormat("en-IN", {
+      style: "currency",
+      currency: "INR",
+      maximumFractionDigits: 0
+    });
+
+    const decimalMoney = new Intl.NumberFormat("en-IN", {
+      style: "currency",
+      currency: "INR",
+      maximumFractionDigits: 2
+    });
+
+    const number = new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 });
+    const percentNumber = new Intl.NumberFormat("en-IN", { maximumFractionDigits: 2 });
+
+    function clampNumber(value, fallback = 0) {
+      const parsed = Number(value);
+      return Number.isFinite(parsed) ? parsed : fallback;
+    }
+
+    function normalizeAssumptions(source) {
+      return Object.keys(workbookDefaults).reduce((result, key) => {
+        const fallback = workbookDefaults[key];
+        result[key] = typeof fallback === "boolean"
+          ? source[key] === true || source[key] === "true" || source[key] === 1
+          : clampNumber(source[key], fallback);
+        return result;
+      }, {});
+    }
+
+    function loadSavedDefaults() {
+      try {
+        const saved = localStorage.getItem(DEFAULT_STORAGE_KEY);
+        return saved
+          ? normalizeAssumptions({ ...workbookDefaults, ...JSON.parse(saved) })
+          : { ...workbookDefaults };
+      } catch (error) {
+        return { ...workbookDefaults };
+      }
+    }
+
+    function persistDefaults(nextDefaults) {
+      try {
+        localStorage.setItem(DEFAULT_STORAGE_KEY, JSON.stringify(nextDefaults));
+        return true;
+      } catch (error) {
+        return false;
+      }
+    }
+
+    function clearSavedDefaults() {
+      try {
+        localStorage.removeItem(DEFAULT_STORAGE_KEY);
+      } catch (error) {
+        return false;
+      }
+      return true;
+    }
+
+    function currentAnnualDistance() {
+      return clampNumber(state.monthlyDistance) * 12;
+    }
+
+    function inflatedRecurringTotal(baseAnnualCost, years, inflationRate) {
+      const annualCost = Math.max(clampNumber(baseAnnualCost), 0);
+      const totalYears = Math.max(Math.floor(clampNumber(years)), 0);
+      const rate = Math.max(clampNumber(inflationRate), -99) / 100;
+      let total = 0;
+      for (let year = 0; year < totalYears; year += 1) {
+        total += annualCost * Math.pow(1 + rate, year);
+      }
+      return total;
+    }
+
+    function inflatedEvRunningCostPerAnnualKmTotal(baseRunningPerKm, years, inflationRate, includeDegradation, degradationRate, replacementYear) {
+      const baseCost = Math.max(clampNumber(baseRunningPerKm), 0);
+      const totalYears = Math.max(Math.floor(clampNumber(years)), 0);
+      const inflation = Math.max(clampNumber(inflationRate), -99) / 100;
+      const degradation = includeDegradation ? Math.min(Math.max(clampNumber(degradationRate), 0), 90) / 100 : 0;
+      const replacementCycle = Math.max(Math.floor(clampNumber(replacementYear)), 0);
+      let total = 0;
+      for (let year = 0; year < totalYears; year += 1) {
+        const batteryAge = replacementCycle > 0 ? year % replacementCycle : year;
+        const usableRangeFactor = Math.max(Math.pow(1 - degradation, batteryAge), 0.1);
+        const degradedRunningPerKm = baseCost / usableRangeFactor;
+        total += degradedRunningPerKm * Math.pow(1 + inflation, year);
+      }
+      return total;
+    }
+
+    function calculateFor(annualDistance = currentAnnualDistance(), ownershipYears = state.ownershipYears) {
+      const years = Math.max(clampNumber(ownershipYears), 0);
+      const evRange = Math.max(clampNumber(state.evRange), 1);
+      const petrolMileage = Math.max(clampNumber(state.petrolMileage), 1);
+      const evEnergyPerKm = Math.max(clampNumber(state.batterySize), 0) / evRange;
+      const petrolFuelPerKm = 1 / petrolMileage;
+      const evRunningPerKm = evEnergyPerKm * Math.max(clampNumber(state.electricityTariff), 0);
+      const petrolRunningPerKm = petrolFuelPerKm * Math.max(clampNumber(state.petrolPrice), 0);
+      const inflationRate = clampNumber(state.inflationRate);
+      const includeBatteryDegradation = Boolean(state.includeBatteryDegradation);
+      const batteryDegradationRate = clampNumber(state.batteryDegradationRate);
+      const batteryReplacementYear = Math.max(Math.floor(clampNumber(state.batteryYear)), 0);
+      const batteryCost = Math.max(clampNumber(state.batteryCost), 0);
+      const completedReplacementEvents = batteryCost > 0 && batteryReplacementYear > 0
+        ? Math.floor(Math.floor(years) / batteryReplacementYear)
+        : 0;
+      const batteryIncluded = completedReplacementEvents > 0;
+      const battery = completedReplacementEvents * batteryCost;
+      const annualDistanceValue = Math.max(clampNumber(annualDistance), 0);
+      const inflationFactorTotal = inflatedRecurringTotal(1, years, inflationRate);
+      const evRunningCostPerAnnualKmTotal = inflatedEvRunningCostPerAnnualKmTotal(
+        evRunningPerKm,
+        years,
+        inflationRate,
+        includeBatteryDegradation,
+        batteryDegradationRate,
+        batteryReplacementYear
+      );
+      const petrolRunningCostPerAnnualKmTotal = petrolRunningPerKm * inflationFactorTotal;
+      const evParts = {
+        purchase: clampNumber(state.evPurchase),
+        insurance: inflatedRecurringTotal(state.evInsurance, years, inflationRate),
+        maintenance: inflatedRecurringTotal(state.evMaintenance, years, inflationRate),
+        battery,
+        running: annualDistanceValue * evRunningCostPerAnnualKmTotal
+      };
+      const petrolParts = {
+        purchase: clampNumber(state.petrolPurchase),
+        insurance: inflatedRecurringTotal(state.petrolInsurance, years, inflationRate),
+        maintenance: inflatedRecurringTotal(state.petrolMaintenance, years, inflationRate),
+        battery: 0,
+        running: annualDistanceValue * petrolRunningCostPerAnnualKmTotal
+      };
+      const evTotal = Object.values(evParts).reduce((sum, value) => sum + value, 0);
+      const petrolTotal = Object.values(petrolParts).reduce((sum, value) => sum + value, 0);
+      const evFixed = evParts.purchase + evParts.insurance + evParts.maintenance + evParts.battery;
+      const petrolFixed = petrolParts.purchase + petrolParts.insurance + petrolParts.maintenance;
+      const runningAdvantage = petrolRunningPerKm - evRunningPerKm;
+      const inflatedRunningAdvantage = petrolRunningCostPerAnnualKmTotal - evRunningCostPerAnnualKmTotal;
+      let breakEvenDistance = null;
+      if (inflatedRunningAdvantage > 0) {
+        breakEvenDistance = (evFixed - petrolFixed) / inflatedRunningAdvantage;
+      }
+
+      return {
+        years,
+        inflationRate,
+        evEnergyPerKm,
+        petrolFuelPerKm,
+        evRunningPerKm,
+        petrolRunningPerKm,
+        runningAdvantage,
+        inflationFactorTotal,
+        includeBatteryDegradation,
+        batteryDegradationRate,
+        batteryReplacementYear,
+        batteryIncluded,
+        evParts,
+        petrolParts,
+        evTotal,
+        petrolTotal,
+        evFixed,
+        petrolFixed,
+        breakEvenDistance
+      };
+    }
+
+    function simulation() {
+      const rows = [];
+      for (let annualDistance = 5000; annualDistance <= 50000; annualDistance += 2500) {
+        const monthlyDistance = annualDistance / 12;
+        const calc = calculateFor(annualDistance);
+        const diff = calc.evTotal - calc.petrolTotal;
+        rows.push({
+          distance: monthlyDistance,
+          annualDistance,
+          evTotal: calc.evTotal,
+          petrolTotal: calc.petrolTotal,
+          evRunning: calc.evParts.running,
+          petrolRunning: calc.petrolParts.running,
+          evFixed: calc.evFixed,
+          petrolFixed: calc.petrolFixed,
+          winner: diff <= 0 ? "EV" : "Petrol",
+          savings: Math.abs(diff)
+        });
+      }
+      return rows;
+    }
+
+    function yearSimulation() {
+      const rows = [];
+      const maxYears = 15;
+      const annualDistance = currentAnnualDistance();
+      for (let year = 1; year <= maxYears; year += 1) {
+        const calc = calculateFor(annualDistance, year);
+        const diff = calc.evTotal - calc.petrolTotal;
+        rows.push({
+          year,
+          evTotal: calc.evTotal,
+          petrolTotal: calc.petrolTotal,
+          evRunning: calc.evParts.running,
+          petrolRunning: calc.petrolParts.running,
+          evFixed: calc.evFixed,
+          petrolFixed: calc.petrolFixed,
+          winner: diff <= 0 ? "EV" : "Petrol",
+          savings: Math.abs(diff)
+        });
+      }
+      return rows;
+    }
+
+    function renderInput(field) {
+      if (!field) {
+        return `<div class="empty-card">No matching petrol input</div>`;
+      }
+      if (field.text) {
+        return `<div class="empty-card">${field.text}</div>`;
+      }
+      if (field.type === "checkbox") {
+        return `
+          <div class="input-card">
+            <label for="${field.key}">${field.label}</label>
+            <label class="toggle-row" for="${field.key}">
+              <input id="${field.key}" data-key="${field.key}" type="checkbox" ${draftState[field.key] ? "checked" : ""}>
+              <span class="toggle-switch" aria-hidden="true"></span>
+              <span class="toggle-copy">${field.unit}</span>
+            </label>
+          </div>
+        `;
+      }
+      return `
+        <div class="input-card">
+          <label for="${field.key}">${field.label}</label>
+          <div class="input-wrap">
+            <input id="${field.key}" data-key="${field.key}" type="${field.type}" value="${draftState[field.key]}" ${field.type === "number" ? "step=\"any\"" : ""}>
+            <span class="unit">${field.unit}</span>
+          </div>
+        </div>
+      `;
+    }
+
+    function updateAssumptionStatus(message, pending = hasPendingChanges) {
+      const status = document.getElementById("assumptionStatus");
+      if (!status) return;
+      status.textContent = message || (pending
+        ? "Assumptions changed. Click Re-calibrate to update the dashboard."
+        : "Dashboard is calibrated with the current assumptions.");
+      status.classList.toggle("pending", pending);
+    }
+
+    function markAssumptionsChanged() {
+      hasPendingChanges = true;
+      updateAssumptionStatus();
+    }
+
+    function recalibrate() {
+      state = { ...draftState };
+      hasPendingChanges = false;
+      render();
+      updateAssumptionStatus("Dashboard recalibrated with the latest assumptions.", false);
+    }
+
+    function saveToDefault() {
+      const nextDefaults = normalizeAssumptions(draftState);
+      const saved = persistDefaults(nextDefaults);
+      if (!saved) {
+        updateAssumptionStatus("Could not save defaults in this browser. The dashboard is unchanged.", hasPendingChanges);
+        return;
+      }
+
+      defaults = { ...nextDefaults };
+      state = { ...defaults };
+      draftState = { ...defaults };
+      hasPendingChanges = false;
+      renderControls();
+      render();
+      updateAssumptionStatus("Saved as the new default and recalibrated the dashboard.", false);
+    }
+
+    function revertToOriginal() {
+      defaults = { ...workbookDefaults };
+      state = { ...workbookDefaults };
+      draftState = { ...workbookDefaults };
+      hasPendingChanges = false;
+      clearSavedDefaults();
+      renderControls();
+      render();
+      updateAssumptionStatus("Original workbook assumptions restored.", false);
+    }
+
+    function downloadAnalysisPdf() {
+      const previousTitle = document.title;
+      document.title = `EV Petrol TCO Analysis ${new Date().toISOString().slice(0, 10)}`;
+      setActiveTab("dashboard");
+      window.setTimeout(() => {
+        window.print();
+        document.title = previousTitle;
+      }, 80);
+    }
+
+    function bindInputs(container) {
+      container.querySelectorAll("input").forEach(input => {
+        input.addEventListener("input", event => {
+          const key = event.target.dataset.key;
+          draftState[key] = event.target.type === "checkbox"
+            ? event.target.checked
+            : event.target.type === "number"
+              ? clampNumber(event.target.value)
+              : event.target.value;
+          markAssumptionsChanged();
+        });
+      });
+    }
+
+    function renderControls() {
+      const sharedControls = document.getElementById("sharedControls");
+      const vehicleControls = document.getElementById("vehicleControls");
+
+      sharedControls.innerHTML = sharedFields.map(field => `
+        <div class="input-card">
+          <label for="${field.key}">${field.label}<br><span class="subtle">${field.helper}</span></label>
+          <div class="input-wrap">
+            <input id="${field.key}" data-key="${field.key}" type="${field.type}" value="${draftState[field.key]}" ${field.type === "number" ? "step=\"any\"" : ""}>
+            <span class="unit">${field.unit}</span>
+          </div>
+        </div>
+      `).join("");
+
+      vehicleControls.innerHTML = `
+        <div class="compare-header">
+          <div></div>
+          <div class="column-title ev">EV car <span>Electric</span></div>
+          <div class="column-title petrol">Petrol car <span>ICE</span></div>
+        </div>
+        ${assumptionRows.map(row => `
+          <div class="compare-row">
+            <div class="row-label">
+              <strong>${row.label}</strong>
+              <p class="subtle">${row.helper}</p>
+            </div>
+            ${renderInput(row.ev)}
+            ${renderInput(row.petrol)}
+          </div>
+        `).join("")}
+      `;
+
+      bindInputs(sharedControls);
+      bindInputs(vehicleControls);
+    }
+
+    function setActiveTab(tabName) {
+      document.querySelectorAll(".tab-btn").forEach(button => {
+        const active = button.dataset.tab === tabName;
+        button.classList.toggle("active", active);
+        button.setAttribute("aria-selected", active ? "true" : "false");
+      });
+
+      const assumptionsScreen = document.getElementById("assumptionsScreen");
+      const dashboardScreen = document.getElementById("dashboardScreen");
+      const showAssumptions = tabName === "assumptions";
+
+      assumptionsScreen.classList.toggle("active", showAssumptions);
+      assumptionsScreen.hidden = !showAssumptions;
+      dashboardScreen.classList.toggle("active", !showAssumptions);
+      dashboardScreen.hidden = showAssumptions;
+    }
+
+    function winnerDetails(calc) {
+      const diff = calc.evTotal - calc.petrolTotal;
+      return {
+        winner: diff <= 0 ? "EV" : "Petrol",
+        className: diff <= 0 ? "ev" : "petrol",
+        savings: Math.abs(diff),
+        diff
+      };
+    }
+
+    function findBreakEvenCrossings(rows) {
+      const crossings = [];
+      for (let index = 0; index < rows.length; index += 1) {
+        const current = rows[index];
+        const currentGap = current.evTotal - current.petrolTotal;
+
+        if (index === 0) {
+          if (currentGap === 0) {
+            crossings.push({ year: current.year, direction: "tie" });
+          }
+          continue;
+        }
+
+        const previous = rows[index - 1];
+        const previousGap = previous.evTotal - previous.petrolTotal;
+
+        if (previousGap === 0) continue;
+        if ((previousGap > 0 && currentGap <= 0) || (previousGap < 0 && currentGap >= 0)) {
+          const gapChange = previousGap - currentGap;
+          const interpolatedYear = gapChange !== 0
+            ? previous.year + previousGap / gapChange
+            : current.year;
+          crossings.push({
+            year: Math.min(Math.max(interpolatedYear, previous.year), current.year),
+            direction: previousGap > 0 ? "ev_becomes_cheaper" : "petrol_becomes_cheaper"
+          });
+        }
+      }
+      return crossings;
+    }
+
+    function estimateEvPaybackYears(rows) {
+      const crossing = findBreakEvenCrossings(rows).find(item => item.direction === "ev_becomes_cheaper" || item.direction === "tie");
+      return crossing ? crossing.year : null;
+    }
+
+    function formatBreakEvenYear(year) {
+      return year <= 1 ? "Year 1" : `${percentNumber.format(year)} years`;
+    }
+
+    function breakEvenInsight(calc) {
+      const breakEvenMonthly = calc.breakEvenDistance === null ? null : calc.breakEvenDistance / 12;
+      if (breakEvenMonthly === null) {
+        return "The EV does not reach a distance-based break-even point under the selected running-cost assumptions.";
+      }
+      if (breakEvenMonthly <= 0) {
+        return "The EV is already lower on fixed ownership cost, so no additional monthly distance is needed for it to become economical.";
+      }
+      return `For the EV to become the more economical choice over ${number.format(calc.years)} years, the vehicle needs to be driven more than ${number.format(Math.ceil(breakEvenMonthly))} km per month (the break-even monthly distance).`;
+    }
+
+    function paybackInsight(yearRows) {
+      const monthlyDistance = clampNumber(state.monthlyDistance);
+      const crossings = findBreakEvenCrossings(yearRows);
+      const hasHigherEvPurchase = clampNumber(state.evPurchase) > clampNumber(state.petrolPurchase);
+      if (crossings.length === 0) {
+        return hasHigherEvPurchase
+          ? `At the assumed usage of ${number.format(monthlyDistance)} km per month, the EV does not recover its higher upfront purchase cost within 15 years.`
+          : `At the assumed usage of ${number.format(monthlyDistance)} km per month, the EV does not become less expensive than the petrol car within 15 years.`;
+      }
+
+      const crossingText = crossings.map(item => {
+        const direction = item.direction === "petrol_becomes_cheaper"
+          ? "petrol becomes cheaper"
+          : item.direction === "ev_becomes_cheaper"
+            ? "EV becomes cheaper"
+            : "both options are equal";
+        return `${formatBreakEvenYear(item.year)} (${direction})`;
+      }).join("; ");
+
+      if (crossings.length > 1) {
+        return `At the assumed usage of ${number.format(monthlyDistance)} km per month, the ownership-year analysis has multiple break-even points: ${crossingText}. This usually happens because battery replacement is a step cost, so the recommendation should be based on the selected ownership year rather than the first break-even point alone.`;
+      }
+
+      const paybackYears = crossings[0].year;
+      const paybackLabel = paybackYears <= 1 ? "within the first year" : `in approximately ${percentNumber.format(paybackYears)} years`;
+      if (hasHigherEvPurchase) {
+        return `At the assumed usage of ${number.format(monthlyDistance)} km per month, the EV recovers its higher upfront purchase cost ${paybackLabel}. Beyond this point, compare the selected ownership year carefully if a battery replacement occurs later.`;
+      }
+      return `At the assumed usage of ${number.format(monthlyDistance)} km per month, the EV becomes less expensive than the petrol car ${paybackLabel}.`;
+    }
+
+    function breakEvenYearLabel(yearRows) {
+      const crossings = findBreakEvenCrossings(yearRows);
+      if (crossings.length === 0) return "Not by year 15";
+      if (crossings.length === 1) return formatBreakEvenYear(crossings[0].year);
+      return `${crossings.length} points`;
+    }
+
+    function conclusionHtml(calc, details, yearRows) {
+      const cheaperLabel = details.winner === "EV" ? "EV" : "petrol car";
+      return `
+        <p><strong>Recommendation:</strong> Based on the selected assumptions, the ${cheaperLabel} is the more economical option, with an estimated savings of ${money.format(details.savings)} over a ${number.format(calc.years)}-year ownership period after adjusting for inflation.</p>
+        <p><strong>Key Insights:</strong></p>
+        <ul class="insight-list">
+          <li>${breakEvenInsight(calc)}</li>
+          <li>${paybackInsight(yearRows)}</li>
+        </ul>
+      `;
+    }
+
+    function renderLineChart(rows, calc) {
+      const svg = document.getElementById("lineChart");
+      const width = 760;
+      const height = 340;
+      const pad = { left: 72, right: 30, top: 34, bottom: 66 };
+      const minX = rows[0].distance;
+      const maxX = rows[rows.length - 1].distance;
+      const maxY = Math.max(...rows.flatMap(row => [row.evTotal, row.petrolTotal])) * 1.08;
+      const x = value => pad.left + ((value - minX) / (maxX - minX)) * (width - pad.left - pad.right);
+      const y = value => height - pad.bottom - (value / maxY) * (height - pad.top - pad.bottom);
+      const pathFor = key => rows.map((row, index) => `${index === 0 ? "M" : "L"} ${x(row.distance).toFixed(2)} ${y(row[key]).toFixed(2)}`).join(" ");
+      const selectedMonthly = clampNumber(state.monthlyDistance);
+      const selectedWithinRange = selectedMonthly >= minX && selectedMonthly <= maxX;
+      const selectedCalc = calculateFor(selectedMonthly * 12);
+      const xTickStep = 500;
+      const xTicks = [];
+      for (let tick = Math.ceil(minX / xTickStep) * xTickStep; tick <= maxX; tick += xTickStep) {
+        xTicks.push(tick);
+      }
+      const gridLines = [0.25, 0.5, 0.75, 1].map(factor => {
+        const value = maxY * factor;
+        return `<g><line x1="${pad.left}" x2="${width - pad.right}" y1="${y(value)}" y2="${y(value)}" stroke="#dfe6dd"/><text x="${pad.left - 10}" y="${y(value) + 4}" text-anchor="end" class="axis-label">Rs ${(value / 100000).toFixed(1)}L</text></g>`;
+      }).join("");
+      const xTickMarkup = xTicks.map(tick => `
+        <g>
+          <line x1="${x(tick)}" x2="${x(tick)}" y1="${pad.top}" y2="${height - pad.bottom}" stroke="#eef2ed"/>
+          <line x1="${x(tick)}" x2="${x(tick)}" y1="${height - pad.bottom}" y2="${height - pad.bottom + 6}" stroke="#839083"/>
+          <text x="${x(tick)}" y="${height - pad.bottom + 22}" text-anchor="middle" class="axis-label">${number.format(tick)}</text>
+        </g>
+      `).join("");
+      const selectedMarkup = selectedWithinRange ? `
+        <line x1="${x(selectedMonthly)}" x2="${x(selectedMonthly)}" y1="${pad.top}" y2="${height - pad.bottom}" stroke="#2e6f9e" stroke-dasharray="5 6"/>
+        <circle cx="${x(selectedMonthly)}" cy="${y(selectedCalc.evTotal)}" r="5" fill="var(--ev)" stroke="#fff" stroke-width="2"/>
+        <circle cx="${x(selectedMonthly)}" cy="${y(selectedCalc.petrolTotal)}" r="5" fill="var(--petrol)" stroke="#fff" stroke-width="2"/>
+        <text x="${x(selectedMonthly)}" y="${pad.top - 10}" text-anchor="middle" class="axis-label">Your input: ${number.format(selectedMonthly)} km/mo</text>
+      ` : `
+        <text x="${width - pad.right}" y="${pad.top - 10}" text-anchor="end" class="axis-label">Your input is outside the chart range</text>
+      `;
+      const breakEvenMonthly = calc.breakEvenDistance === null ? null : calc.breakEvenDistance / 12;
+      const breakEvenMarkup = (() => {
+        if (breakEvenMonthly === null) {
+          return `<text x="${width - pad.right}" y="${pad.top - 12}" text-anchor="end" class="axis-label">No break-even: EV has no running-cost edge here</text>`;
+        }
+        if (breakEvenMonthly <= 0) {
+          return `<text x="${width - pad.right}" y="${pad.top - 12}" text-anchor="end" class="axis-label">Break-even already passed: EV starts lower</text>`;
+        }
+
+        const roundedBreakEven = Math.ceil(breakEvenMonthly);
+        const breakEvenInRange = breakEvenMonthly >= minX && breakEvenMonthly <= maxX;
+        if (!breakEvenInRange) {
+          const direction = breakEvenMonthly > maxX ? "beyond" : "before";
+          return `<text x="${width - pad.right}" y="${pad.top - 12}" text-anchor="end" class="axis-label">Break-even: ${number.format(roundedBreakEven)} km/mo, ${direction} chart range</text>`;
+        }
+
+        const beX = x(breakEvenMonthly);
+        return `
+          <line x1="${beX}" x2="${beX}" y1="${pad.top}" y2="${height - pad.bottom}" stroke="#6d597a" stroke-dasharray="3 5" opacity="0.7"/>
+          <text x="${beX}" y="${height - pad.bottom + 42}" text-anchor="middle" class="axis-label">Break-even: ${number.format(roundedBreakEven)} km/mo</text>
+        `;
+      })();
+
+      svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+      svg.innerHTML = `
+        <rect width="${width}" height="${height}" fill="transparent"></rect>
+        ${gridLines}
+        ${xTickMarkup}
+        <line x1="${pad.left}" x2="${width - pad.right}" y1="${height - pad.bottom}" y2="${height - pad.bottom}" stroke="#b9c5ba"/>
+        <line x1="${pad.left}" x2="${pad.left}" y1="${pad.top}" y2="${height - pad.bottom}" stroke="#b9c5ba"/>
+        ${breakEvenMarkup}
+        <path d="${pathFor("evTotal")}" fill="none" stroke="var(--ev)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="${pathFor("petrolTotal")}" fill="none" stroke="var(--petrol)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+        ${selectedMarkup}
+        <text x="${(pad.left + width - pad.right) / 2}" y="${height - 13}" text-anchor="middle" class="axis-title">Monthly distance driven (km/month)</text>
+        <text transform="translate(18 ${(pad.top + height - pad.bottom) / 2}) rotate(-90)" text-anchor="middle" class="axis-title">Inflation-adjusted TCO (Rs lakh)</text>
+      `;
+    }
+
+    function renderYearChart(rows) {
+      const svg = document.getElementById("yearChart");
+      const width = 760;
+      const height = 340;
+      const pad = { left: 72, right: 30, top: 34, bottom: 66 };
+      const minX = 1;
+      const maxX = 15;
+      const maxY = Math.max(...rows.flatMap(row => [row.evTotal, row.petrolTotal])) * 1.08;
+      const x = value => pad.left + ((value - minX) / (maxX - minX)) * (width - pad.left - pad.right);
+      const y = value => height - pad.bottom - (value / maxY) * (height - pad.top - pad.bottom);
+      const pathFor = key => rows.map((row, index) => `${index === 0 ? "M" : "L"} ${x(row.year).toFixed(2)} ${y(row[key]).toFixed(2)}`).join(" ");
+      const xTicks = [];
+      for (let tick = 1; tick <= maxX; tick += 2) {
+        xTicks.push(tick);
+      }
+      if (!xTicks.includes(maxX)) xTicks.push(maxX);
+      const gridLines = [0.25, 0.5, 0.75, 1].map(factor => {
+        const value = maxY * factor;
+        return `<g><line x1="${pad.left}" x2="${width - pad.right}" y1="${y(value)}" y2="${y(value)}" stroke="#dfe6dd"/><text x="${pad.left - 10}" y="${y(value) + 4}" text-anchor="end" class="axis-label">Rs ${(value / 100000).toFixed(1)}L</text></g>`;
+      }).join("");
+      const xTickMarkup = xTicks.map(tick => `
+        <g>
+          <line x1="${x(tick)}" x2="${x(tick)}" y1="${pad.top}" y2="${height - pad.bottom}" stroke="#eef2ed"/>
+          <line x1="${x(tick)}" x2="${x(tick)}" y1="${height - pad.bottom}" y2="${height - pad.bottom + 6}" stroke="#839083"/>
+          <text x="${x(tick)}" y="${height - pad.bottom + 22}" text-anchor="middle" class="axis-label">${number.format(tick)}</text>
+        </g>
+      `).join("");
+      const selectedYear = Math.min(Math.max(Math.floor(clampNumber(state.ownershipYears)), 1), maxX);
+      const selected = rows.find(row => row.year === selectedYear) || rows[rows.length - 1];
+      const selectedMarkup = selected ? `
+        <line x1="${x(selected.year)}" x2="${x(selected.year)}" y1="${pad.top}" y2="${height - pad.bottom}" stroke="#2e6f9e" stroke-dasharray="5 6"/>
+        <circle cx="${x(selected.year)}" cy="${y(selected.evTotal)}" r="5" fill="var(--ev)" stroke="#fff" stroke-width="2"/>
+        <circle cx="${x(selected.year)}" cy="${y(selected.petrolTotal)}" r="5" fill="var(--petrol)" stroke="#fff" stroke-width="2"/>
+        <text x="${x(selected.year)}" y="${pad.top - 8}" text-anchor="middle" class="axis-label">Selected: ${number.format(selected.year)} yrs</text>
+      ` : "";
+      const crossings = findBreakEvenCrossings(rows);
+      const breakEvenMarkup = (() => {
+        if (crossings.length === 0) {
+          return `<text x="${width - pad.right}" y="${pad.top - 12}" text-anchor="end" class="axis-label">No year break-even: EV is not lower by year 15</text>`;
+        }
+
+        const markers = crossings.map((item, index) => {
+          const beX = x(Math.min(Math.max(item.year, minX), maxX));
+          const label = item.year <= 1 ? "Year 1" : `Year ${percentNumber.format(item.year)}`;
+          const yOffset = height - pad.bottom + 42 + (index % 2) * 16;
+          return `
+            <line x1="${beX}" x2="${beX}" y1="${pad.top}" y2="${height - pad.bottom}" stroke="#6d597a" stroke-dasharray="3 5" opacity="0.7"/>
+            <text x="${beX}" y="${yOffset}" text-anchor="middle" class="axis-label">BE: ${label}</text>
+          `;
+        }).join("");
+
+        const summary = crossings.length > 1
+          ? `<text x="${width - pad.right}" y="${pad.top - 12}" text-anchor="end" class="axis-label">Multiple break-even points due to step costs</text>`
+          : "";
+        return `${summary}${markers}`;
+      })();
+
+      svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+      svg.innerHTML = `
+        <rect width="${width}" height="${height}" fill="transparent"></rect>
+        ${gridLines}
+        ${xTickMarkup}
+        <line x1="${pad.left}" x2="${width - pad.right}" y1="${height - pad.bottom}" y2="${height - pad.bottom}" stroke="#b9c5ba"/>
+        <line x1="${pad.left}" x2="${pad.left}" y1="${pad.top}" y2="${height - pad.bottom}" stroke="#b9c5ba"/>
+        ${breakEvenMarkup}
+        <path d="${pathFor("evTotal")}" fill="none" stroke="var(--ev)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="${pathFor("petrolTotal")}" fill="none" stroke="var(--petrol)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+        ${selectedMarkup}
+        <text x="${(pad.left + width - pad.right) / 2}" y="${height - 13}" text-anchor="middle" class="axis-title">Ownership period (years, 1-15)</text>
+        <text transform="translate(18 ${(pad.top + height - pad.bottom) / 2}) rotate(-90)" text-anchor="middle" class="axis-title">Inflation-adjusted TCO (Rs lakh)</text>
+      `;
+    }
+
+    function renderBreakdown(calc) {
+      const breakdown = document.getElementById("breakdown");
+      const maxTotal = Math.max(calc.evTotal, calc.petrolTotal);
+      const rows = [
+        ["EV", calc.evParts, calc.evTotal],
+        ["Petrol", calc.petrolParts, calc.petrolTotal]
+      ];
+      breakdown.innerHTML = rows.map(([name, parts, total]) => {
+        const widthFor = value => `${Math.max((value / maxTotal) * 100, value > 0 ? 1 : 0)}%`;
+        return `
+          <div class="bar-group">
+            <div class="bar-head"><strong>${name}</strong><span>${money.format(total)}</span></div>
+            <div class="stack" title="${name} cost breakdown">
+              <span class="seg purchase" style="width:${widthFor(parts.purchase)}"></span>
+              <span class="seg insurance" style="width:${widthFor(parts.insurance)}"></span>
+              <span class="seg maintenance" style="width:${widthFor(parts.maintenance)}"></span>
+              <span class="seg battery" style="width:${widthFor(parts.battery)}"></span>
+              <span class="seg running" style="width:${widthFor(parts.running)}"></span>
+            </div>
+          </div>
+        `;
+      }).join("") + `
+        <div class="legend">
+          <span><i class="dot" style="background:#315f77"></i>Purchase</span>
+          <span><i class="dot" style="background:#84a98c"></i>Insurance</span>
+          <span><i class="dot" style="background:#d6a04b"></i>Maintenance</span>
+          <span><i class="dot" style="background:#6d597a"></i>Battery</span>
+          <span><i class="dot" style="background:#b56576"></i>Running</span>
+        </div>
+      `;
+    }
+
+    function renderTable(rows) {
+      const selectedDistance = rows.reduce((best, row) => Math.abs(row.distance - state.monthlyDistance) < Math.abs(best.distance - state.monthlyDistance) ? row : best, rows[0]).distance;
+      document.getElementById("simulationRows").innerHTML = rows.map(row => `
+        <tr class="${row.distance === selectedDistance ? "selected" : ""}">
+          <td>${number.format(row.distance)}</td>
+          <td>${money.format(row.evTotal)}</td>
+          <td>${money.format(row.petrolTotal)}</td>
+          <td>${money.format(row.evRunning)}</td>
+          <td>${money.format(row.petrolRunning)}</td>
+          <td>${money.format(row.evFixed)}</td>
+          <td>${money.format(row.petrolFixed)}</td>
+          <td>${row.winner}</td>
+          <td>${money.format(row.savings)}</td>
+        </tr>
+      `).join("");
+    }
+
+    function renderYearTable(rows) {
+      const selectedYear = Math.min(Math.max(Math.floor(clampNumber(state.ownershipYears)), 1), 15);
+      document.getElementById("yearSimulationRows").innerHTML = rows.map(row => `
+        <tr class="${row.year === selectedYear ? "selected" : ""}">
+          <td>${number.format(row.year)}</td>
+          <td>${money.format(row.evTotal)}</td>
+          <td>${money.format(row.petrolTotal)}</td>
+          <td>${money.format(row.evRunning)}</td>
+          <td>${money.format(row.petrolRunning)}</td>
+          <td>${money.format(row.evFixed)}</td>
+          <td>${money.format(row.petrolFixed)}</td>
+          <td>${row.winner}</td>
+          <td>${money.format(row.savings)}</td>
+        </tr>
+      `).join("");
+    }
+
+    function replacementDescription() {
+      const replacementYear = Math.max(Math.floor(clampNumber(state.batteryYear)), 0);
+      if (replacementYear === 0) {
+        return "No replacement assumed";
+      }
+      return `Every ${number.format(replacementYear)} year${replacementYear === 1 ? "" : "s"}`;
+    }
+
+    function reportValue(value, unit = "") {
+      return `${number.format(value)}${unit ? ` ${unit}` : ""}`;
+    }
+
+    function renderPrintableAssumptions(calc, details) {
+      const grid = document.getElementById("printAssumptionGrid");
+      if (!grid) return;
+
+      const generatedDate = new Date().toLocaleDateString("en-IN", {
+        year: "numeric",
+        month: "short",
+        day: "2-digit"
+      });
+      document.getElementById("printReportDate").textContent = `Generated on ${generatedDate}`;
+      document.getElementById("printOwnershipMetric").textContent = `${number.format(calc.years)} years`;
+      document.getElementById("printDistanceMetric").textContent = `${number.format(state.monthlyDistance)} km/month`;
+      document.getElementById("printInflationMetric").textContent = `${percentNumber.format(state.inflationRate)}% p.a.`;
+      document.getElementById("printRecommendationMetric").textContent = details.winner;
+
+      const sections = [
+        {
+          title: "Usage assumptions",
+          rows: [
+            ["Ownership period", reportValue(state.ownershipYears, "years")],
+            ["Monthly distance driven", reportValue(state.monthlyDistance, "km/month")],
+            ["Annual distance driven", reportValue(currentAnnualDistance(), "km/year")],
+            ["Annual inflation", `${percentNumber.format(state.inflationRate)}%`]
+          ]
+        },
+        {
+          title: "EV assumptions",
+          rows: [
+            ["Purchase price", money.format(state.evPurchase)],
+            ["Insurance", `${money.format(state.evInsurance)} / year`],
+            ["Maintenance", `${money.format(state.evMaintenance)} / year`],
+            ["Electricity tariff", `${decimalMoney.format(state.electricityTariff)} / kWh`],
+            ["Battery capacity", reportValue(state.batterySize, "kWh")],
+            ["Range per full charge", reportValue(state.evRange, "km")],
+            ["Base running cost", `${decimalMoney.format(calc.evRunningPerKm)} / km`]
+          ]
+        },
+        {
+          title: "Petrol assumptions",
+          rows: [
+            ["Purchase price", money.format(state.petrolPurchase)],
+            ["Insurance", `${money.format(state.petrolInsurance)} / year`],
+            ["Maintenance", `${money.format(state.petrolMaintenance)} / year`],
+            ["Petrol price", `${decimalMoney.format(state.petrolPrice)} / litre`],
+            ["Mileage", reportValue(state.petrolMileage, "km/litre")],
+            ["Base running cost", `${decimalMoney.format(calc.petrolRunningPerKm)} / km`]
+          ]
+        },
+        {
+          title: "Battery assumptions",
+          rows: [
+            ["Replacement cost", money.format(state.batteryCost)],
+            ["Replacement interval", replacementDescription()],
+            ["Replacement rule", "0 means no replacement; any positive value repeats at that interval"],
+            ["Battery degradation", state.includeBatteryDegradation ? "Enabled" : "Disabled"],
+            ["Annual degradation rate", `${percentNumber.format(state.batteryDegradationRate)}%`]
+          ]
+        }
+      ];
+
+      grid.innerHTML = sections.map(section => `
+        <div class="assumption-report-card">
+          <h3>${section.title}</h3>
+          <table>
+            <tbody>
+              ${section.rows.map(([label, value]) => `
+                <tr>
+                  <th>${label}</th>
+                  <td>${value}</td>
+                </tr>
+              `).join("")}
+            </tbody>
+          </table>
+        </div>
+      `).join("");
+    }
+
+    function render() {
+      const calc = calculateFor();
+      const details = winnerDetails(calc);
+      const rows = simulation();
+      const yearRows = yearSimulation();
+      const breakEven = calc.breakEvenDistance;
+      const totalDistance = currentAnnualDistance() * Math.max(Math.floor(calc.years), 0);
+      const evCostPerKm = totalDistance > 0 ? calc.evParts.running / totalDistance : calc.evRunningPerKm;
+      const petrolCostPerKm = totalDistance > 0 ? calc.petrolParts.running / totalDistance : calc.petrolRunningPerKm;
+      const breakEvenLabel = breakEven === null
+        ? "No EV advantage"
+        : breakEven <= 0
+          ? "Already lower"
+          : `${number.format(Math.ceil(breakEven / 12))} km/month`;
+
+      document.getElementById("winnerPill").textContent = details.winner;
+      document.getElementById("winnerPill").className = `pill ${details.className}`;
+      document.getElementById("conclusion").innerHTML = conclusionHtml(calc, details, yearRows);
+      document.getElementById("evCostPerKmMetric").textContent = `${decimalMoney.format(evCostPerKm)}/km`;
+      document.getElementById("petrolCostPerKmMetric").textContent = `${decimalMoney.format(petrolCostPerKm)}/km`;
+      document.getElementById("breakEvenYearMetric").textContent = breakEvenYearLabel(yearRows);
+      document.getElementById("breakEvenDistanceMetric").textContent = breakEvenLabel;
+
+      renderPrintableAssumptions(calc, details);
+      renderLineChart(rows, calc);
+      renderYearChart(yearRows);
+      renderBreakdown(calc);
+      renderYearTable(yearRows);
+      renderTable(rows);
+    }
+
+    document.getElementById("recalibrateBtn").addEventListener("click", recalibrate);
+    document.getElementById("saveDefaultBtn").addEventListener("click", saveToDefault);
+    document.getElementById("revertBtn").addEventListener("click", revertToOriginal);
+    document.getElementById("downloadPdfBtn").addEventListener("click", downloadAnalysisPdf);
+
+    document.querySelectorAll(".tab-btn").forEach(button => {
+      button.addEventListener("click", () => {
+        setActiveTab(button.dataset.tab);
+      });
+    });
+
+    renderControls();
+    render();
+    updateAssumptionStatus();
+  </script>
+</body>
+</html>
