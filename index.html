@@ -859,6 +859,51 @@
       padding: 8px;
     }
 
+
+
+    .print-report-cover,
+    .print-assumptions {
+      display: none;
+    }
+
+    .assumption-report-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 12px;
+    }
+
+    .assumption-report-card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fbfcfa;
+      overflow: hidden;
+    }
+
+    .assumption-report-card h3 {
+      font-size: 15px;
+      padding: 10px 12px;
+      background: #eef2ed;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .assumption-report-card table {
+      min-width: 0;
+      table-layout: auto;
+      font-size: 12px;
+    }
+
+    .assumption-report-card th,
+    .assumption-report-card td {
+      padding: 8px 10px;
+      white-space: normal;
+    }
+
+    .assumption-report-card th:first-child,
+    .assumption-report-card td:first-child {
+      width: 50%;
+    }
+
     @media (max-width: 1100px) {
       .app {
         padding: 16px;
@@ -952,6 +997,16 @@
         display: block !important;
       }
 
+      .print-report-cover,
+      .print-assumptions {
+        display: block !important;
+        margin-bottom: 10px;
+      }
+
+      .print-report-cover {
+        page-break-after: avoid;
+      }
+
       .summary,
       .panel,
       .table-wrap {
@@ -971,6 +1026,14 @@
       .analysis-column .table-wrap {
         max-height: none;
         overflow: visible;
+      }
+
+      .assumption-report-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .print-assumptions {
+        page-break-after: always;
       }
 
       table {
@@ -1048,6 +1111,31 @@
           </div>
           <button class="action-btn primary" id="downloadPdfBtn" type="button">Download PDF</button>
         </div>
+
+        <section class="print-report-cover panel" id="printReportCover">
+          <div class="panel-head">
+            <div>
+              <h2>EV vs Petrol Total Cost of Ownership Analysis</h2>
+              <p class="subtle" id="printReportDate"></p>
+            </div>
+          </div>
+          <div class="hero-metrics">
+            <div class="metric"><span>Ownership period</span><strong id="printOwnershipMetric"></strong></div>
+            <div class="metric"><span>Monthly distance</span><strong id="printDistanceMetric"></strong></div>
+            <div class="metric"><span>Annual inflation</span><strong id="printInflationMetric"></strong></div>
+            <div class="metric"><span>Recommendation</span><strong id="printRecommendationMetric"></strong></div>
+          </div>
+        </section>
+
+        <section class="print-assumptions panel" id="printAssumptions">
+          <div class="panel-head">
+            <div>
+              <h2>Assumptions used for this analysis</h2>
+              <p class="subtle">These are the calibrated assumptions used to generate the dashboard and simulations.</p>
+            </div>
+          </div>
+          <div class="assumption-report-grid" id="printAssumptionGrid"></div>
+        </section>
 
         <section class="hero">
           <div class="summary">
@@ -1283,13 +1371,13 @@
       },
       {
         label: "Battery replacement",
-        helper: "In the year simulation, this cost is applied only in the replacement year.",
+        helper: "Replacement cost is added at every interval entered in Battery replacement year. Set replacement year to 0 to exclude battery replacement cost.",
         ev: { key: "batteryCost", label: "Replacement cost", type: "number", unit: "Rs" },
         petrol: { text: "Not applicable for petrol cars" }
       },
       {
         label: "Battery replacement year",
-        helper: "Year in which battery replacement is assumed.",
+        helper: "Enter the replacement interval in years (e.g., 8 means the battery is replaced every 8 years). Enter 0 if no battery replacement is expected during the vehicle's lifetime.",
         ev: { key: "batteryYear", label: "Replacement year", type: "number", unit: "year" },
         petrol: { text: "Not applicable for petrol cars" }
       }
@@ -1385,7 +1473,7 @@
       return total;
     }
 
-    function calculateFor(annualDistance = currentAnnualDistance(), ownershipYears = state.ownershipYears, options = {}) {
+    function calculateFor(annualDistance = currentAnnualDistance(), ownershipYears = state.ownershipYears) {
       const years = Math.max(clampNumber(ownershipYears), 0);
       const evRange = Math.max(clampNumber(state.evRange), 1);
       const petrolMileage = Math.max(clampNumber(state.petrolMileage), 1);
@@ -1398,13 +1486,11 @@
       const batteryDegradationRate = clampNumber(state.batteryDegradationRate);
       const batteryReplacementYear = Math.max(Math.floor(clampNumber(state.batteryYear)), 0);
       const batteryCost = Math.max(clampNumber(state.batteryCost), 0);
-      const currentYear = Math.floor(years);
-      const batteryIncluded = batteryCost > 0 && batteryReplacementYear > 0 && (
-        options.batteryOnlyInCurrentYear
-          ? currentYear === batteryReplacementYear
-          : years >= batteryReplacementYear
-      );
-      const battery = batteryIncluded ? batteryCost : 0;
+      const completedReplacementEvents = batteryCost > 0 && batteryReplacementYear > 0
+        ? Math.floor(Math.floor(years) / batteryReplacementYear)
+        : 0;
+      const batteryIncluded = completedReplacementEvents > 0;
+      const battery = completedReplacementEvents * batteryCost;
       const annualDistanceValue = Math.max(clampNumber(annualDistance), 0);
       const inflationFactorTotal = inflatedRecurringTotal(1, years, inflationRate);
       const evRunningCostPerAnnualKmTotal = inflatedEvRunningCostPerAnnualKmTotal(
@@ -1491,7 +1577,7 @@
       const maxYears = 15;
       const annualDistance = currentAnnualDistance();
       for (let year = 1; year <= maxYears; year += 1) {
-        const calc = calculateFor(annualDistance, year, { batteryOnlyInCurrentYear: true });
+        const calc = calculateFor(annualDistance, year);
         const diff = calc.evTotal - calc.petrolTotal;
         rows.push({
           year,
@@ -1674,21 +1760,44 @@
       };
     }
 
+    function findBreakEvenCrossings(rows) {
+      const crossings = [];
+      for (let index = 0; index < rows.length; index += 1) {
+        const current = rows[index];
+        const currentGap = current.evTotal - current.petrolTotal;
+
+        if (index === 0) {
+          if (currentGap === 0) {
+            crossings.push({ year: current.year, direction: "tie" });
+          }
+          continue;
+        }
+
+        const previous = rows[index - 1];
+        const previousGap = previous.evTotal - previous.petrolTotal;
+
+        if (previousGap === 0) continue;
+        if ((previousGap > 0 && currentGap <= 0) || (previousGap < 0 && currentGap >= 0)) {
+          const gapChange = previousGap - currentGap;
+          const interpolatedYear = gapChange !== 0
+            ? previous.year + previousGap / gapChange
+            : current.year;
+          crossings.push({
+            year: Math.min(Math.max(interpolatedYear, previous.year), current.year),
+            direction: previousGap > 0 ? "ev_becomes_cheaper" : "petrol_becomes_cheaper"
+          });
+        }
+      }
+      return crossings;
+    }
+
     function estimateEvPaybackYears(rows) {
-      const breakEvenRow = rows.find(row => row.evTotal <= row.petrolTotal);
-      if (!breakEvenRow) return null;
+      const crossing = findBreakEvenCrossings(rows).find(item => item.direction === "ev_becomes_cheaper" || item.direction === "tie");
+      return crossing ? crossing.year : null;
+    }
 
-      const index = rows.indexOf(breakEvenRow);
-      if (index <= 0) return breakEvenRow.year;
-
-      const previous = rows[index - 1];
-      const previousGap = previous.evTotal - previous.petrolTotal;
-      const currentGap = breakEvenRow.evTotal - breakEvenRow.petrolTotal;
-      const gapChange = previousGap - currentGap;
-
-      return gapChange > 0
-        ? previous.year + previousGap / gapChange
-        : breakEvenRow.year;
+    function formatBreakEvenYear(year) {
+      return year <= 1 ? "Year 1" : `${percentNumber.format(year)} years`;
     }
 
     function breakEvenInsight(calc) {
@@ -1704,25 +1813,40 @@
 
     function paybackInsight(yearRows) {
       const monthlyDistance = clampNumber(state.monthlyDistance);
-      const paybackYears = estimateEvPaybackYears(yearRows);
+      const crossings = findBreakEvenCrossings(yearRows);
       const hasHigherEvPurchase = clampNumber(state.evPurchase) > clampNumber(state.petrolPurchase);
-      if (paybackYears === null) {
+      if (crossings.length === 0) {
         return hasHigherEvPurchase
           ? `At the assumed usage of ${number.format(monthlyDistance)} km per month, the EV does not recover its higher upfront purchase cost within 15 years.`
           : `At the assumed usage of ${number.format(monthlyDistance)} km per month, the EV does not become less expensive than the petrol car within 15 years.`;
       }
 
+      const crossingText = crossings.map(item => {
+        const direction = item.direction === "petrol_becomes_cheaper"
+          ? "petrol becomes cheaper"
+          : item.direction === "ev_becomes_cheaper"
+            ? "EV becomes cheaper"
+            : "both options are equal";
+        return `${formatBreakEvenYear(item.year)} (${direction})`;
+      }).join("; ");
+
+      if (crossings.length > 1) {
+        return `At the assumed usage of ${number.format(monthlyDistance)} km per month, the ownership-year analysis has multiple break-even points: ${crossingText}. This usually happens because battery replacement is a step cost, so the recommendation should be based on the selected ownership year rather than the first break-even point alone.`;
+      }
+
+      const paybackYears = crossings[0].year;
       const paybackLabel = paybackYears <= 1 ? "within the first year" : `in approximately ${percentNumber.format(paybackYears)} years`;
       if (hasHigherEvPurchase) {
-        return `At the assumed usage of ${number.format(monthlyDistance)} km per month, the EV recovers its higher upfront purchase cost ${paybackLabel}. Beyond this point, the EV becomes less expensive to operate.`;
+        return `At the assumed usage of ${number.format(monthlyDistance)} km per month, the EV recovers its higher upfront purchase cost ${paybackLabel}. Beyond this point, compare the selected ownership year carefully if a battery replacement occurs later.`;
       }
       return `At the assumed usage of ${number.format(monthlyDistance)} km per month, the EV becomes less expensive than the petrol car ${paybackLabel}.`;
     }
 
     function breakEvenYearLabel(yearRows) {
-      const paybackYears = estimateEvPaybackYears(yearRows);
-      if (paybackYears === null) return "Not by year 15";
-      return paybackYears <= 1 ? "Year 1" : `${percentNumber.format(paybackYears)} years`;
+      const crossings = findBreakEvenCrossings(yearRows);
+      if (crossings.length === 0) return "Not by year 15";
+      if (crossings.length === 1) return formatBreakEvenYear(crossings[0].year);
+      return `${crossings.length} points`;
     }
 
     function conclusionHtml(calc, details, yearRows) {
@@ -1849,28 +1973,26 @@
         <circle cx="${x(selected.year)}" cy="${y(selected.petrolTotal)}" r="5" fill="var(--petrol)" stroke="#fff" stroke-width="2"/>
         <text x="${x(selected.year)}" y="${pad.top - 8}" text-anchor="middle" class="axis-label">Selected: ${number.format(selected.year)} yrs</text>
       ` : "";
-      const breakEvenRow = rows.find(row => row.evTotal <= row.petrolTotal);
+      const crossings = findBreakEvenCrossings(rows);
       const breakEvenMarkup = (() => {
-        if (!breakEvenRow) {
+        if (crossings.length === 0) {
           return `<text x="${width - pad.right}" y="${pad.top - 12}" text-anchor="end" class="axis-label">No year break-even: EV is not lower by year 15</text>`;
         }
 
-        const previous = rows[rows.indexOf(breakEvenRow) - 1];
-        let breakEvenYear = breakEvenRow.year;
-        if (previous) {
-          const previousGap = previous.evTotal - previous.petrolTotal;
-          const currentGap = breakEvenRow.evTotal - breakEvenRow.petrolTotal;
-          const gapChange = previousGap - currentGap;
-          if (gapChange > 0) {
-            breakEvenYear = previous.year + previousGap / gapChange;
-          }
-        }
-        const beX = x(Math.min(Math.max(breakEvenYear, minX), maxX));
-        const label = breakEvenYear <= 1 ? "Year 1" : `Around year ${percentNumber.format(breakEvenYear)}`;
-        return `
-          <line x1="${beX}" x2="${beX}" y1="${pad.top}" y2="${height - pad.bottom}" stroke="#6d597a" stroke-dasharray="3 5" opacity="0.7"/>
-          <text x="${beX}" y="${height - pad.bottom + 42}" text-anchor="middle" class="axis-label">Break-even: ${label}</text>
-        `;
+        const markers = crossings.map((item, index) => {
+          const beX = x(Math.min(Math.max(item.year, minX), maxX));
+          const label = item.year <= 1 ? "Year 1" : `Year ${percentNumber.format(item.year)}`;
+          const yOffset = height - pad.bottom + 42 + (index % 2) * 16;
+          return `
+            <line x1="${beX}" x2="${beX}" y1="${pad.top}" y2="${height - pad.bottom}" stroke="#6d597a" stroke-dasharray="3 5" opacity="0.7"/>
+            <text x="${beX}" y="${yOffset}" text-anchor="middle" class="axis-label">BE: ${label}</text>
+          `;
+        }).join("");
+
+        const summary = crossings.length > 1
+          ? `<text x="${width - pad.right}" y="${pad.top - 12}" text-anchor="end" class="axis-label">Multiple break-even points due to step costs</text>`
+          : "";
+        return `${summary}${markers}`;
       })();
 
       svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
@@ -1955,6 +2077,95 @@
       `).join("");
     }
 
+    function replacementDescription() {
+      const replacementYear = Math.max(Math.floor(clampNumber(state.batteryYear)), 0);
+      if (replacementYear === 0) {
+        return "No replacement assumed";
+      }
+      return `Every ${number.format(replacementYear)} year${replacementYear === 1 ? "" : "s"}`;
+    }
+
+    function reportValue(value, unit = "") {
+      return `${number.format(value)}${unit ? ` ${unit}` : ""}`;
+    }
+
+    function renderPrintableAssumptions(calc, details) {
+      const grid = document.getElementById("printAssumptionGrid");
+      if (!grid) return;
+
+      const generatedDate = new Date().toLocaleDateString("en-IN", {
+        year: "numeric",
+        month: "short",
+        day: "2-digit"
+      });
+      document.getElementById("printReportDate").textContent = `Generated on ${generatedDate}`;
+      document.getElementById("printOwnershipMetric").textContent = `${number.format(calc.years)} years`;
+      document.getElementById("printDistanceMetric").textContent = `${number.format(state.monthlyDistance)} km/month`;
+      document.getElementById("printInflationMetric").textContent = `${percentNumber.format(state.inflationRate)}% p.a.`;
+      document.getElementById("printRecommendationMetric").textContent = details.winner;
+
+      const sections = [
+        {
+          title: "Usage assumptions",
+          rows: [
+            ["Ownership period", reportValue(state.ownershipYears, "years")],
+            ["Monthly distance driven", reportValue(state.monthlyDistance, "km/month")],
+            ["Annual distance driven", reportValue(currentAnnualDistance(), "km/year")],
+            ["Annual inflation", `${percentNumber.format(state.inflationRate)}%`]
+          ]
+        },
+        {
+          title: "EV assumptions",
+          rows: [
+            ["Purchase price", money.format(state.evPurchase)],
+            ["Insurance", `${money.format(state.evInsurance)} / year`],
+            ["Maintenance", `${money.format(state.evMaintenance)} / year`],
+            ["Electricity tariff", `${decimalMoney.format(state.electricityTariff)} / kWh`],
+            ["Battery capacity", reportValue(state.batterySize, "kWh")],
+            ["Range per full charge", reportValue(state.evRange, "km")],
+            ["Base running cost", `${decimalMoney.format(calc.evRunningPerKm)} / km`]
+          ]
+        },
+        {
+          title: "Petrol assumptions",
+          rows: [
+            ["Purchase price", money.format(state.petrolPurchase)],
+            ["Insurance", `${money.format(state.petrolInsurance)} / year`],
+            ["Maintenance", `${money.format(state.petrolMaintenance)} / year`],
+            ["Petrol price", `${decimalMoney.format(state.petrolPrice)} / litre`],
+            ["Mileage", reportValue(state.petrolMileage, "km/litre")],
+            ["Base running cost", `${decimalMoney.format(calc.petrolRunningPerKm)} / km`]
+          ]
+        },
+        {
+          title: "Battery assumptions",
+          rows: [
+            ["Replacement cost", money.format(state.batteryCost)],
+            ["Replacement interval", replacementDescription()],
+            ["Replacement rule", "0 means no replacement; any positive value repeats at that interval"],
+            ["Battery degradation", state.includeBatteryDegradation ? "Enabled" : "Disabled"],
+            ["Annual degradation rate", `${percentNumber.format(state.batteryDegradationRate)}%`]
+          ]
+        }
+      ];
+
+      grid.innerHTML = sections.map(section => `
+        <div class="assumption-report-card">
+          <h3>${section.title}</h3>
+          <table>
+            <tbody>
+              ${section.rows.map(([label, value]) => `
+                <tr>
+                  <th>${label}</th>
+                  <td>${value}</td>
+                </tr>
+              `).join("")}
+            </tbody>
+          </table>
+        </div>
+      `).join("");
+    }
+
     function render() {
       const calc = calculateFor();
       const details = winnerDetails(calc);
@@ -1978,6 +2189,7 @@
       document.getElementById("breakEvenYearMetric").textContent = breakEvenYearLabel(yearRows);
       document.getElementById("breakEvenDistanceMetric").textContent = breakEvenLabel;
 
+      renderPrintableAssumptions(calc, details);
       renderLineChart(rows, calc);
       renderYearChart(yearRows);
       renderBreakdown(calc);
