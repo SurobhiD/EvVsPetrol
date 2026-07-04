@@ -2,10 +2,6 @@
 
 This folder is a standalone static website. The entry file is `index.html`.
 
-## Share it online
-
-Upload the contents of this folder to any static hosting provider such as Netlify, Vercel, GitHub Pages, Azure Static Web Apps, or an internal web server.
-
 The site does not require a backend. All calculations run in the browser.
 
 ## Notes
